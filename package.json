@@ -1,0 +1,141 @@
+{
+  "name": "zai-usage-monitor",
+  "displayName": "ZAI Usage Monitor",
+  "description": "在 VS Code 中监控您的 ZAI Coding Plan 使用量",
+  "version": "0.0.7",
+  "publisher": "zai",
+  "icon": "resources/icon-256.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zai-usage-monitor/zai-usage-monitor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/zai-usage-monitor/zai-usage-monitor/issues"
+  },
+  "homepage": "https://github.com/zai-usage-monitor/zai-usage-monitor#readme",
+  "license": "MIT",
+  "keywords": [
+    "zai",
+    "usage",
+    "monitor",
+    "api",
+    "token",
+    "statistics",
+    "analytics"
+  ],
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "glmUsage.showUsage",
+        "title": "显示 ZAI 使用量面板",
+        "icon": "$(graph)"
+      },
+      {
+        "command": "glmUsage.refresh",
+        "title": "刷新 ZAI 使用量",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "glmUsage.configure",
+        "title": "配置 ZAI 使用量监控",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "glmUsage.clearCredentials",
+        "title": "清除 ZAI API 凭证",
+        "icon": "$(discard)"
+      },
+      {
+        "command": "glmUsage.diagnose",
+        "title": "诊断 ZAI 使用量凭证",
+        "icon": "$(search)"
+      }
+    ],
+    "configuration": {
+      "title": "ZAI 使用量监控",
+      "properties": {
+        "glmUsage.baseUrl": {
+          "type": "string",
+          "default": "https://api.z.ai/api/anthropic",
+          "description": "ZAI API 基础 URL"
+        },
+        "glmUsage.refreshInterval": {
+          "type": "number",
+          "default": 600000,
+          "description": "自动刷新间隔（毫秒，默认：10 分钟）"
+        },
+        "glmUsage.autoRefresh": {
+          "type": "boolean",
+          "default": true,
+          "description": "自动刷新使用量数据"
+        },
+        "glmUsage.cacheEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "启用数据缓存以提高性能"
+        },
+        "glmUsage.cacheTTL": {
+          "type": "number",
+          "default": 300,
+          "description": "缓存有效期（秒，默认：300 秒/5 分钟）"
+        },
+        "glmUsage.notificationThresholds": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "default": [
+            50,
+            80,
+            95
+          ],
+          "description": "用量阈值提醒百分比（触发通知的用量百分比）"
+        },
+        "glmUsage.notificationEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "启用用量阈值提醒"
+        },
+        "glmUsage.statusBarMode": {
+          "type": "string",
+          "enum": [
+            "minimal",
+            "compact",
+            "detailed"
+          ],
+          "default": "detailed",
+          "description": "状态栏显示模式: minimal(仅百分比), compact(Token百分比), detailed(Token和MCP)"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.3.0",
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.0",
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.80.0",
+    "@vscode/test-electron": "^2.5.2",
+    "chai": "^6.2.2",
+    "glob": "^13.0.6",
+    "mocha": "^11.7.5",
+    "typescript": "^5.0.0"
+  }
+}

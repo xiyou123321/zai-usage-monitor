@@ -1,0 +1,29 @@
+# Source files
+src/**
+tsconfig.json
+*.map
+.gitignore
+
+# Test files
+**/*.test.ts
+**/*.spec.ts
+out/test/**
+
+# Documentation (except README.md, CHANGELOG.md, TROUBLESHOOTING.md)
+docs/**
+**/*.md
+!README.md
+!CHANGELOG.md
+!TROUBLESHOOTING.md
+
+# Development files
+.vscode/**
+.github/**
+.claude/**
+.git/**
+
+# Screenshots (will be uploaded separately)
+screenshots/**
+
+# Node modules
+node_modules/**
