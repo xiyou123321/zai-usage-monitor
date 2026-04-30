@@ -22,8 +22,8 @@ docs/**
 .claude/**
 .git/**
 
-# Screenshots (will be uploaded separately)
-screenshots/**
+# Screenshots included for marketplace preview
+# screenshots/**
 
 # Node modules
 node_modules/**
