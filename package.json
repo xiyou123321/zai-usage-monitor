@@ -7,12 +7,12 @@
   "icon": "resources/icon-256.png",
   "repository": {
     "type": "git",
-    "url": "https://github.com/zai-usage-monitor/zai-usage-monitor.git"
+    "url": "https://github.com/xiyou123321/zai-usage-monitor.git"
   },
   "bugs": {
-    "url": "https://github.com/zai-usage-monitor/zai-usage-monitor/issues"
+    "url": "https://github.com/xiyou123321/zai-usage-monitor/issues"
   },
-  "homepage": "https://github.com/zai-usage-monitor/zai-usage-monitor#readme",
+  "homepage": "https://github.com/xiyou123321/zai-usage-monitor#readme",
   "license": "MIT",
   "keywords": [
     "zai",
