@@ -3,7 +3,7 @@
   "displayName": "ZAI Usage Monitor",
   "description": "在 VS Code 中监控您的 ZAI Coding Plan 使用量",
   "version": "0.0.7",
-  "publisher": "zai",
+  "publisher": "xiyou123321",
   "icon": "resources/icon-256.png",
   "repository": {
     "type": "git",
