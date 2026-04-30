@@ -569,15 +569,18 @@ export class GLMUsageService {
 
     // ========== Parse all limits into QuotaItem[] ==========
     const quotaItems: QuotaItem[] = [];
+    let tokenLimitIndex = 0;
     for (const limit of limits) {
       const percentage = Math.max(0, Math.min(100, this.toNumber(limit.percentage)));
       const resetAt = this.extractResetTimeFromLimit(limit);
-      const resetLabel = resetAt ? this.getResetLabel(resetAt) : "";
 
       if (limit.type === "TOKENS_LIMIT") {
+        // Multiple TOKENS_LIMIT entries: first = 5小时, second = 每周
+        const label = tokenLimitIndex === 0 ? "5小时" : "每周";
+        tokenLimitIndex++;
         quotaItems.push({
           type: "TOKENS_LIMIT",
-          label: resetLabel || "Token 配额",
+          label,
           percentage,
           used: Math.max(0, percentage),
           total: 100,
@@ -588,7 +591,7 @@ export class GLMUsageService {
         const totalUsage = this.toNumber(limit.usage);
         quotaItems.push({
           type: "TIME_LIMIT",
-          label: resetLabel || "MCP 配额",
+          label: "每月",
           percentage,
           used: Math.max(0, currentValue),
           total: Math.max(0, totalUsage),
