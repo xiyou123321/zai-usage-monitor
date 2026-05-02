@@ -135,6 +135,15 @@ export class GLMUsageService {
   }
 
   /**
+   * Fetch model usage by custom time range (no caching)
+   */
+  async fetchModelUsageByTimeRange(startTime: string, endTime: string): Promise<UsageResponse | null> {
+    const baseUrl = this.getMonitorBaseUrl();
+    const url = `${baseUrl}/api/monitor/usage/model-usage?startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}`;
+    return this.makeRequest<UsageResponse>(url);
+  }
+
+  /**
    * Fetch tool usage with time window and optional caching
    * 失败时返回缓存数据或默认值
    */
@@ -414,7 +423,7 @@ export class GLMUsageService {
   /**
    * Extract model usage details from response
    */
-  private extractModelUsageDetails(
+  extractModelUsageDetails(
     modelUsage: UsageResponse | undefined,
   ): ModelUsageData | undefined {
     if (!modelUsage || !modelUsage.data) {

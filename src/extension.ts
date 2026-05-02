@@ -6,6 +6,7 @@ import { StatusBarManager } from "./services/StatusBarManager";
 import { UsagePanel } from "./views/UsagePanel";
 import { ThresholdNotifier } from "./notifications/ThresholdNotifier";
 import { QuotaSummary, UsageRange } from "./types/api";
+import { getTimeWindowParams } from "./util/timeWindow";
 
 let refreshTimer: NodeJS.Timeout | undefined;
 let authService: AuthService;
@@ -268,6 +269,12 @@ async function fetchAndParseUsage(range: UsageRange): Promise<QuotaSummary | nul
   summary.lastRefreshTime = lastRefreshTime?.toISOString();
   summary.nextRefreshTime = nextRefreshTime?.toISOString();
 
+  // Calculate usage prediction based on burn rate
+  computeUsagePrediction(summary, range);
+
+  // Calculate previous period comparison
+  await computePreviousComparison(summary, range, glmUsageService);
+
   // 标记离线状态
   if (!networkStatus.isOnline) {
     summary.isOffline = true;
@@ -396,6 +403,117 @@ export function deactivate() {
   }
   usagePanel.dispose();
   statusBarManager.dispose();
+}
+
+function computeUsagePrediction(summary: QuotaSummary, range: UsageRange): void {
+  const consumedTokens = summary.consumedTokens ?? 0;
+  if (consumedTokens <= 0) {
+    summary.usagePrediction = { burnRatePerHour: 0, label: "暂无数据" };
+    return;
+  }
+
+  const now = new Date();
+  let elapsedHours: number;
+  let unit: string;
+  let burnRate: number;
+
+  if (range === "today") {
+    elapsedHours = Math.max(now.getHours() + now.getMinutes() / 60, 0.5);
+    burnRate = consumedTokens / elapsedHours;
+    unit = "h";
+  } else if (range === "last7Days") {
+    elapsedHours = 7 * 24;
+    burnRate = consumedTokens / elapsedHours;
+    unit = "h";
+  } else {
+    elapsedHours = 30 * 24;
+    burnRate = consumedTokens / elapsedHours;
+    unit = "h";
+  }
+
+  const formatRate = (v: number): string => {
+    if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
+    if (v >= 1_000) return `${(v / 1_000).toFixed(1)}K`;
+    return `${Math.round(v)}`;
+  };
+
+  summary.usagePrediction = {
+    burnRatePerHour: burnRate,
+    label: `${formatRate(burnRate)} tokens/${unit}`,
+  };
+}
+
+async function computePreviousComparison(
+  summary: QuotaSummary,
+  range: UsageRange,
+  service: GLMUsageService,
+): Promise<void> {
+  try {
+    const currentTokens = summary.consumedTokens ?? 0;
+
+    // Determine previous period range
+    const now = new Date();
+    let prevStart: Date;
+    let prevEnd: Date;
+
+    if (range === "today") {
+      // Yesterday
+      prevStart = new Date(now);
+      prevStart.setDate(prevStart.getDate() - 1);
+      prevStart.setHours(0, 0, 0, 0);
+      prevEnd = new Date(prevStart);
+      prevEnd.setHours(23, 59, 59, 999);
+    } else if (range === "last7Days") {
+      // Previous 7 days
+      prevEnd = new Date(now);
+      prevEnd.setDate(prevEnd.getDate() - 7);
+      prevEnd.setHours(23, 59, 59, 999);
+      prevStart = new Date(prevEnd);
+      prevStart.setDate(prevStart.getDate() - 6);
+      prevStart.setHours(0, 0, 0, 0);
+    } else {
+      // Previous 30 days
+      prevEnd = new Date(now);
+      prevEnd.setDate(prevEnd.getDate() - 30);
+      prevEnd.setHours(23, 59, 59, 999);
+      prevStart = new Date(prevEnd);
+      prevStart.setDate(prevStart.getDate() - 29);
+      prevStart.setHours(0, 0, 0, 0);
+    }
+
+    const prevWindow = {
+      startTime: `${prevStart.getFullYear()}-${String(prevStart.getMonth() + 1).padStart(2, "0")}-${String(prevStart.getDate()).padStart(2, "0")} ${String(prevStart.getHours()).padStart(2, "0")}:${String(prevStart.getMinutes()).padStart(2, "0")}:${String(prevStart.getSeconds()).padStart(2, "0")}`,
+      endTime: `${prevEnd.getFullYear()}-${String(prevEnd.getMonth() + 1).padStart(2, "0")}-${String(prevEnd.getDate()).padStart(2, "0")} ${String(prevEnd.getHours()).padStart(2, "0")}:${String(prevEnd.getMinutes()).padStart(2, "0")}:${String(prevEnd.getSeconds()).padStart(2, "0")}`,
+    };
+
+    const prevModelUsage = await service.fetchModelUsageByTimeRange(prevWindow.startTime, prevWindow.endTime);
+    if (!prevModelUsage) {
+      return;
+    }
+
+    const prevDetails = service.extractModelUsageDetails(prevModelUsage);
+    const previousTokens = prevDetails?.totalUsage?.totalTokensUsage ?? 0;
+
+    if (previousTokens === 0 && currentTokens === 0) {
+      return;
+    }
+
+    const changePercent = previousTokens > 0
+      ? Math.round(((currentTokens - previousTokens) / previousTokens) * 1000) / 10
+      : currentTokens > 0 ? 100 : 0;
+
+    const direction = changePercent > 0 ? "+" : "";
+    const rangeLabels: Record<UsageRange, string> = { today: "昨日", last7Days: "上周", last30Days: "上月" };
+
+    summary.previousPeriodComparison = {
+      previousTokens,
+      currentTokens,
+      changePercent,
+      label: `vs ${rangeLabels[range]} ${direction}${changePercent}%`,
+    };
+  } catch {
+    // Silently skip comparison if it fails
+  }
 }
 
 async function showConfigurationDialog(): Promise<void> {

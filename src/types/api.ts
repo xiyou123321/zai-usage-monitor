@@ -105,6 +105,24 @@ export interface QuotaSummary {
   monthlyResetAt: string;
   /** All parsed quota items from API (may contain multiple token/mcp limits) */
   quotaItems?: QuotaItem[];
+  /** Consumption rate data */
+  usagePrediction?: {
+    /** Tokens consumed per hour */
+    burnRatePerHour: number;
+    /** Human-readable label like "1.2K tokens/h" */
+    label: string;
+  };
+  /** Previous period comparison data */
+  previousPeriodComparison?: {
+    /** Previous period total tokens */
+    previousTokens: number;
+    /** Current period total tokens */
+    currentTokens: number;
+    /** Percentage change, e.g. +12.5 or -5.3 */
+    changePercent: number;
+    /** Human-readable label */
+    label: string;
+  };
   /** Token数 consumed in the query time period */
   consumedTokens?: number;
   /** Model usage details in the query time period */

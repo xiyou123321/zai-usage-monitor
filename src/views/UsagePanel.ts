@@ -421,6 +421,10 @@ export class UsagePanel {
     --muted: var(--vscode-descriptionForeground);
     --radius: 12px;
     --radius-sm: 8px;
+    color-scheme: dark;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { color-scheme: light; }
   }
   *{box-sizing:border-box;margin:0;padding:0}
   body{
@@ -573,6 +577,21 @@ export class UsagePanel {
   .trend-line{transition:opacity .15s;cursor:pointer}
   .trend-line.dimmed{opacity:.12}
   .trend-line.highlighted{stroke-width:3}
+
+  /* 预测 & 对比 */
+  .insight-section{display:flex;gap:12px;margin-bottom:16px}
+  .insight-card{
+    flex:1;padding:12px 16px;border-radius:var(--radius);background:var(--card-bg);
+    border:1px solid var(--border);display:flex;align-items:center;gap:12px;
+  }
+  .insight-icon{font-size:20px;flex-shrink:0}
+  .insight-content{min-width:0}
+  .insight-title{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px}
+  .insight-value{font-size:13px;font-weight:700}
+  .insight-sub{font-size:10px;color:var(--muted);margin-top:1px}
+  .compare-up{color:var(--apple-red)}
+  .compare-down{color:var(--apple-green)}
+  .compare-neutral{color:var(--muted)}
 </style>
 </head>
 <body>
@@ -615,6 +634,9 @@ ${this.renderQuotaSection(summary)}
     <div class="stat-sub">${topModel ? this.formatTokenCount(topModel.totalTokens) + " tokens" : ""}</div>
   </div>
 </div>
+
+<!-- 用量预测 & 历史对比 -->
+${this.renderInsightSection(summary)}
 
 <div class="main-grid">
   <div class="card">
@@ -807,6 +829,41 @@ ${this.generateLineChartSection(summary, modelColorMap)}
     else if (frac <= 7) nice = 7;
     else nice = 10;
     return nice * Math.pow(10, exp);
+  }
+
+  private renderInsightSection(summary: QuotaSummary): string {
+    const prediction = summary.usagePrediction;
+    const comparison = summary.previousPeriodComparison;
+
+    if (!prediction && !comparison) return "";
+
+    const cards: string[] = [];
+
+    if (prediction) {
+      cards.push(`<div class="insight-card">
+        <span class="insight-icon">⚡</span>
+        <div class="insight-content">
+          <div class="insight-title">消耗速率</div>
+          <div class="insight-value">${this.escapeHtml(prediction.label)}</div>
+        </div>
+      </div>`);
+    }
+
+    if (comparison) {
+      const isUp = comparison.changePercent > 0;
+      const cls = isUp ? "compare-up" : comparison.changePercent < 0 ? "compare-down" : "compare-neutral";
+      const arrow = isUp ? "↑" : comparison.changePercent < 0 ? "↓" : "→";
+      cards.push(`<div class="insight-card">
+        <span class="insight-icon">📊</span>
+        <div class="insight-content">
+          <div class="insight-title">历史对比</div>
+          <div class="insight-value ${cls}">${arrow} ${this.escapeHtml(comparison.label)}</div>
+          <div class="insight-sub">${this.formatTokenCount(comparison.currentTokens)} vs ${this.formatTokenCount(comparison.previousTokens)}</div>
+        </div>
+      </div>`);
+    }
+
+    return `<div class="insight-section">${cards.join("")}</div>`;
   }
 
   private getRefreshInfoHtml(summary: QuotaSummary): string {
