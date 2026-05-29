@@ -22,8 +22,8 @@ export class StatusBarManager {
   constructor(mode: StatusBarMode = "detailed") {
     this.mode = mode;
     this.statusBarItem = vscode.window.createStatusBarItem(
-      vscode.StatusBarAlignment.Right,
-      100,
+      vscode.StatusBarAlignment.Left,
+      10,
     );
     this.statusBarItem.tooltip = this.createTooltipMarkdown(
       "ZAI Usage Monitor",
@@ -144,10 +144,10 @@ export class StatusBarManager {
    */
   private getDominantPercentage(): number {
     if (!this.currentSummary) return 0;
-    return Math.max(
-      this.currentSummary.tokenUsage.percentage,
-      this.currentSummary.mcpUsage.percentage,
-    );
+    const tp = this.currentSummary.tokenUsage.percentage;
+    const mp = this.currentSummary.mcpUsage.percentage;
+    // Token 优先：Token >= 50% 时用 Token，否则取 max
+    return tp >= 50 ? tp : Math.max(tp, mp);
   }
 
   /**

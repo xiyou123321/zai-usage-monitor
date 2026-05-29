@@ -609,6 +609,13 @@ export class GLMUsageService {
       }
     }
 
+    // Sort: TOKENS_LIMIT items first, then TIME_LIMIT
+    quotaItems.sort((a, b) => {
+      if (a.type === "TOKENS_LIMIT" && b.type !== "TOKENS_LIMIT") return -1;
+      if (a.type !== "TOKENS_LIMIT" && b.type === "TOKENS_LIMIT") return 1;
+      return 0;
+    });
+
     // ========== Backward-compatible first-item extraction ==========
     const tokenLimit = limits.find((l) => l.type === "TOKENS_LIMIT");
     const timeLimit = limits.find((l) => l.type === "TIME_LIMIT");

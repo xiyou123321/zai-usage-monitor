@@ -185,7 +185,7 @@ export class UsagePanel {
             <span class="quota-card-label"><span class="tag-dot" style="background:var(--apple-blue)"></span> Token 配额</span>
             <span class="quota-card-pct" style="color:${this.getProgressColor(tokenPercent)}">${tokenPercent}%</span>
           </div>
-          <div class="progress-track"><div class="progress-fill" style="width:${Math.min(tokenPercent, 100)}%;background:${this.getProgressColor(tokenPercent)}"></div></div>
+          <div class="progress-track"><div class="progress-fill" style="width:${Math.min(tokenPercent, 100)}%;background:${this.getProgressGradient(tokenPercent)}"></div></div>
           <div class="quota-card-meta"><span>已用 ${tokenPercent}%</span><span>重置 ${tokenResetTime}</span></div>
         </div>
         <div class="quota-card">
@@ -193,23 +193,20 @@ export class UsagePanel {
             <span class="quota-card-label"><span class="tag-dot" style="background:var(--apple-orange)"></span> MCP 配额</span>
             <span class="quota-card-pct" style="color:${this.getProgressColor(mcpPercent)}">${mcpPercent}%</span>
           </div>
-          <div class="progress-track"><div class="progress-fill" style="width:${Math.min(mcpPercent, 100)}%;background:${this.getProgressColor(mcpPercent)}"></div></div>
+          <div class="progress-track"><div class="progress-fill" style="width:${Math.min(mcpPercent, 100)}%;background:${this.getProgressGradient(mcpPercent)}"></div></div>
           <div class="quota-card-meta"><span>已用 ${summary.mcpUsage.used} / ${summary.mcpUsage.total}</span><span>重置 ${mcpResetTime}</span></div>
         </div>
       </div>`;
     }
 
     // Dynamic: render all quota items
-    const quotaColors = [
-      "var(--apple-blue)", "var(--apple-orange)", "var(--apple-green)",
-      "var(--apple-purple)", "var(--apple-pink)", "var(--apple-teal)",
-    ];
     const tokenIcon = "var(--apple-blue)";
     const mcpIcon = "var(--apple-orange)";
 
     const cards = items.map((item, i) => {
       const pct = Math.round(item.percentage);
       const color = this.getProgressColor(pct);
+      const gradient = this.getProgressGradient(pct);
       const dotColor = item.type === "TOKENS_LIMIT" ? tokenIcon : mcpIcon;
       const typePrefix = item.type === "TOKENS_LIMIT" ? "Token" : "MCP";
       const displayLabel = `${typePrefix} · ${item.label}`;
@@ -228,7 +225,7 @@ export class UsagePanel {
           <span class="quota-card-label"><span class="tag-dot" style="background:${dotColor}"></span> ${this.escapeHtml(displayLabel)}</span>
           <span class="quota-card-pct" style="color:${color}">${pct}%</span>
         </div>
-        <div class="progress-track"><div class="progress-fill" style="width:${Math.min(pct, 100)}%;background:${color}"></div></div>
+        <div class="progress-track"><div class="progress-fill" style="width:${Math.min(pct, 100)}%;background:${gradient}"></div></div>
         <div class="quota-card-meta"><span>${usedLabel}</span><span>重置 ${resetTime}</span></div>
       </div>`;
     }).join("\n");
@@ -530,8 +527,9 @@ export class UsagePanel {
   .bar-row{display:grid;grid-template-columns:64px 1fr 36px;gap:8px;align-items:center;border-radius:4px;padding:2px 4px}
   .bar-name{font-size:11px;color:var(--muted);white-space:nowrap}
   .bar-track{height:16px;border-radius:var(--radius-sm);background:var(--panel-bg);overflow:hidden}
-  .bar-fill{height:100%;border-radius:var(--radius-sm);min-width:2px;transition:width .3s cubic-bezier(.4,0,.2,1),opacity .15s}
+  .bar-fill{height:100%;border-radius:var(--radius-sm);min-width:2px;transition:width .3s cubic-bezier(.4,0,.2,1),opacity .15s,filter .15s}
   .bar-fill.dimmed{opacity:.2}
+  .bar-fill.highlighted{filter:brightness(1.3);box-shadow:0 0 6px rgba(255,255,255,.15)}
   .bar-count{font-size:13px;font-weight:700;text-align:right}
 
   /* 计数卡片 */
@@ -614,19 +612,19 @@ ${this.renderQuotaSection(summary)}
 <!-- 快速统计 -->
 <div class="stats-grid">
   <div class="stat-card">
-    <div class="stat-value" style="color:var(--apple-blue)">${this.formatTokenCount(totalTokens)}</div>
+    <div class="stat-value" style="color:var(--apple-blue)">${this.formatTokenCount(totalTokens)}${summary.previousPeriodComparison ? this.getTrendArrow(summary.previousPeriodComparison.changePercent) : ""}</div>
     <div class="stat-label">Token 消耗</div>
     <div class="stat-sub">${totalTokens.toLocaleString("zh-CN")} tokens</div>
   </div>
   <div class="stat-card">
     <div class="stat-value" style="color:var(--apple-green)">${totalModelCalls.toLocaleString("zh-CN")}</div>
     <div class="stat-label">模型调用</div>
-    <div class="stat-sub">avg ${avgTokensPerCall.toLocaleString("zh-CN")} tok/call</div>
+    <div class="stat-sub">平均 ${avgTokensPerCall.toLocaleString("zh-CN")} tokens/次</div>
   </div>
   <div class="stat-card">
     <div class="stat-value" style="color:var(--apple-orange)">${totalToolCalls.toLocaleString("zh-CN")}</div>
     <div class="stat-label">工具调用</div>
-    <div class="stat-sub">${totalToolCalls > 0 ? ((totalToolCalls / Math.max(totalModelCalls, 1)) * 100).toFixed(0) + "% of calls" : "无工具调用"}</div>
+    <div class="stat-sub">${totalToolCalls > 0 ? `调用占比 ${((totalToolCalls / Math.max(totalModelCalls, 1)) * 100).toFixed(0)}%` : "无工具调用"}</div>
   </div>
   <div class="stat-card">
     <div class="stat-value" style="color:var(--apple-purple);font-size:14px">${topModel ? this.escapeHtml(topModel.modelName) : "--"}</div>
@@ -779,9 +777,11 @@ ${this.generateLineChartSection(summary, modelColorMap)}
       }
     }
 
-    const lines = models
+    const activeModels = models
       .filter((m) => m.totalTokens > 0)
-      .sort((a, b) => b.totalTokens - a.totalTokens)
+      .sort((a, b) => b.totalTokens - a.totalTokens);
+
+    const lines = activeModels
       .map((m) => {
         const color = modelColorMap.get(m.modelName) ?? CHART_COLORS[0];
         const points = m.tokensUsage.map((v, i) => `${padL + i * xStep},${yScale(v)}`).join(" ");
@@ -790,12 +790,20 @@ ${this.generateLineChartSection(summary, modelColorMap)}
       })
       .join("\n");
 
+    // Area fills for each model with semi-transparent color
+    const areaFills = activeModels
+      .map((m) => {
+        const color = modelColorMap.get(m.modelName) ?? CHART_COLORS[0];
+        const lastIdx = m.tokensUsage.length - 1;
+        const points = m.tokensUsage.map((v, i) => `${padL + i * xStep},${yScale(v)}`).join(" ");
+        return `<polygon points="${padL},${yScale(0)} ${points} ${padL + lastIdx * xStep},${yScale(0)}" fill="${color}" opacity="0.06" class="trend-line" data-model="${this.escapeHtml(m.modelName)}"/>`;
+      })
+      .join("\n");
+
     const totalArea = totalTokensUsage.map((v, i) => `${padL + i * xStep},${yScale(v)}`).join(" ");
     const areaPath = `<polygon points="${padL},${yScale(0)} ${totalArea} ${padL + (xTime.length - 1) * xStep},${yScale(0)}" fill="var(--apple-blue)" opacity="0.04"/>`;
 
-    const legendItems = models
-      .filter((m) => m.totalTokens > 0)
-      .sort((a, b) => b.totalTokens - a.totalTokens)
+    const legendItems = activeModels
       .map((m) => {
         const color = modelColorMap.get(m.modelName) ?? CHART_COLORS[0];
         return `<span class="trend-legend-item clickable" data-model="${this.escapeHtml(m.modelName)}"
@@ -805,7 +813,7 @@ ${this.generateLineChartSection(summary, modelColorMap)}
       .join("");
 
     const svg = `<svg viewBox="0 0 ${W} ${H}" class="trend-svg" preserveAspectRatio="xMidYMid meet">
-      ${areaPath}${yAxisSvg}${xAxisSvg}${lines}
+      ${areaPath}${areaFills}${yAxisSvg}${xAxisSvg}${lines}
     </svg>`;
 
     return `<div class="trend-card">
@@ -884,6 +892,20 @@ ${this.generateLineChartSection(summary, modelColorMap)}
     if (pct >= 95) return "var(--apple-red)";
     if (pct >= 80) return "var(--apple-orange)";
     return "var(--apple-green)";
+  }
+
+  private getProgressGradient(pct: number): string {
+    if (pct >= 95) return "linear-gradient(90deg, var(--apple-orange), var(--apple-red))";
+    if (pct >= 80) return "linear-gradient(90deg, var(--apple-yellow), var(--apple-orange))";
+    if (pct >= 50) return "linear-gradient(90deg, var(--apple-green), var(--apple-yellow))";
+    return "linear-gradient(90deg, #30D158, var(--apple-green))";
+  }
+
+  private getTrendArrow(changePercent: number): string {
+    if (changePercent === 0) return "";
+    const arrow = changePercent > 0 ? "↑" : "↓";
+    const color = changePercent > 0 ? "var(--apple-red)" : "var(--apple-green)";
+    return ` <span style="font-size:11px;color:${color}">${arrow}${Math.abs(changePercent).toFixed(0)}%</span>`;
   }
 
   private formatTokenCount(v: number): string {
