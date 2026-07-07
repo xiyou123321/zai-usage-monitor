@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { QuotaSummary, UsageRange } from "../types/api";
+import { getDominantPercentage, getWeeklyTokenItem } from "../util/quota";
 import { getUsageRangeLabel } from "../util/timeWindow";
 
 /**
@@ -140,24 +141,13 @@ export class StatusBarManager {
   }
 
   /**
-   * Get the dominant usage percentage for color calculation
-   */
-  private getDominantPercentage(): number {
-    if (!this.currentSummary) return 0;
-    const tp = this.currentSummary.tokenUsage.percentage;
-    const mp = this.currentSummary.mcpUsage.percentage;
-    // Token 优先：Token >= 50% 时用 Token，否则取 max
-    return tp >= 50 ? tp : Math.max(tp, mp);
-  }
-
-  /**
    * Get status bar color based on usage percentage
    */
   private getColor(): vscode.ThemeColor | undefined {
     if (this.isOffline) {
       return new vscode.ThemeColor("descriptionForeground");
     }
-    const percentage = this.getDominantPercentage();
+    const percentage = getDominantPercentage(this.currentSummary);
     if (percentage >= 95) {
       return new vscode.ThemeColor("errorForeground");
     }
@@ -301,7 +291,7 @@ export class StatusBarManager {
 
     return this.createTooltipMarkdown(
       "ZAI Usage",
-      this.getHealthLabel(this.getDominantPercentage()),
+      this.getHealthLabel(getDominantPercentage(this.currentSummary)),
       [
         `Token **${tokenUsage.percentage.toFixed(1)}%** · 重置 ${tokenResetTime}`,
         `MCP **${mcpUsage.percentage.toFixed(1)}%** · 重置 ${mcpResetTime}`,
@@ -314,7 +304,7 @@ export class StatusBarManager {
         "",
         "点击打开面板",
       ],
-      this.getDominantPercentage() >= 80 ? "warning" : "info",
+      getDominantPercentage(this.currentSummary) >= 80 ? "warning" : "info",
     );
   }
 
