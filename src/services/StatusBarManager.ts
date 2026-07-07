@@ -175,12 +175,14 @@ export class StatusBarManager {
    */
   private getText(): string {
     const icon = this.getIcon();
+    const wp = getWeeklyTokenItem(this.currentSummary)?.percentage;
 
     if (this.isOffline) {
       if (this.currentSummary) {
         const tp = Math.round(this.currentSummary.tokenUsage.percentage);
         const mp = Math.round(this.currentSummary.mcpUsage.percentage);
-        return `${icon} T${tp}% M${mp}%`;
+        const w = wp !== undefined ? ` W${Math.round(wp)}%` : "";
+        return `${icon} T${tp}%${w} M${mp}%`;
       }
       return `${icon} 离线`;
     }
@@ -202,12 +204,16 @@ export class StatusBarManager {
 
     switch (this.mode) {
       case "minimal":
-        return `${icon} ${Math.max(tp, mp)}%`;
-      case "compact":
-        return `${icon} T${tp}% M${mp}%`;
+        return `${icon} ${Math.max(tp, Math.round(wp ?? 0), mp)}%`;
+      case "compact": {
+        const w = wp !== undefined ? ` W${Math.round(wp)}%` : "";
+        return `${icon} T${tp}%${w} M${mp}%`;
+      }
       case "detailed":
-      default:
-        return `${icon} T${tp}% · M${mp}%`;
+      default: {
+        const w = wp !== undefined ? ` · W${Math.round(wp)}%` : "";
+        return `${icon} T${tp}%${w} · M${mp}%`;
+      }
     }
   }
 
