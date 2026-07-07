@@ -233,18 +233,23 @@ export class StatusBarManager {
           : "--";
         const totalTokens = this.currentSummary.consumedTokens ?? 0;
         const totalModelCalls = this.currentSummary.modelUsageDetails?.totalUsage?.totalModelCallCount ?? 0;
+        const offlineLines = [
+          `Token **${tokenUsage.percentage.toFixed(1)}%** · 重置 ${tokenResetTime}`,
+        ];
+        const offlineWeekly = this.formatWeeklyTooltipLine();
+        if (offlineWeekly) offlineLines.push(offlineWeekly);
+        offlineLines.push(
+          `MCP **${mcpUsage.percentage.toFixed(1)}%** · 重置 ${mcpResetTime}`,
+          "",
+          `范围：${getUsageRangeLabel(this.currentRange)}`,
+          `消耗 ${totalTokens > 0 ? this.formatTooltipTokens(totalTokens) : "--"} · 调用 ${totalModelCalls.toLocaleString("zh-CN")}`,
+          "",
+          "点击打开面板",
+        );
         return this.createTooltipMarkdown(
           "ZAI Usage",
           "离线缓存",
-          [
-            `Token **${tokenUsage.percentage.toFixed(1)}%** · 重置 ${tokenResetTime}`,
-            `MCP **${mcpUsage.percentage.toFixed(1)}%** · 重置 ${mcpResetTime}`,
-            "",
-            `范围：${getUsageRangeLabel(this.currentRange)}`,
-            `消耗 ${totalTokens > 0 ? this.formatTooltipTokens(totalTokens) : "--"} · 调用 ${totalModelCalls.toLocaleString("zh-CN")}`,
-            "",
-            "点击打开面板",
-          ],
+          offlineLines,
           "warning",
         );
       }
@@ -295,21 +300,27 @@ export class StatusBarManager {
           .sort((a, b) => b.c - a.c)[0]?.n
       : "";
 
+    const onlineLines = [
+      `Token **${tokenUsage.percentage.toFixed(1)}%** · 重置 ${tokenResetTime}`,
+    ];
+    const onlineWeekly = this.formatWeeklyTooltipLine();
+    if (onlineWeekly) onlineLines.push(onlineWeekly);
+    onlineLines.push(
+      `MCP **${mcpUsage.percentage.toFixed(1)}%** · 重置 ${mcpResetTime}`,
+      "",
+      `范围：${getUsageRangeLabel(this.currentRange)}`,
+      `消耗 ${totalTokens > 0 ? this.formatTooltipTokens(totalTokens) : "--"} · 调用 ${totalModelCalls.toLocaleString("zh-CN")} · 平均 ${avgTokPerCall.toLocaleString("zh-CN")} tok/call`,
+      `模型 ${modelCount} 个 · 工具 ${totalToolCalls.toLocaleString("zh-CN")}`,
+      topModel ? `主力：${topModel.modelName} (${this.formatTooltipTokens(topModel.totalTokens)})` : "",
+      topToolName ? `常用工具：${topToolName}` : "",
+      "",
+      "点击打开面板",
+    );
+
     return this.createTooltipMarkdown(
       "ZAI Usage",
       this.getHealthLabel(getDominantPercentage(this.currentSummary)),
-      [
-        `Token **${tokenUsage.percentage.toFixed(1)}%** · 重置 ${tokenResetTime}`,
-        `MCP **${mcpUsage.percentage.toFixed(1)}%** · 重置 ${mcpResetTime}`,
-        "",
-        `范围：${getUsageRangeLabel(this.currentRange)}`,
-        `消耗 ${totalTokens > 0 ? this.formatTooltipTokens(totalTokens) : "--"} · 调用 ${totalModelCalls.toLocaleString("zh-CN")} · 平均 ${avgTokPerCall.toLocaleString("zh-CN")} tok/call`,
-        `模型 ${modelCount} 个 · 工具 ${totalToolCalls.toLocaleString("zh-CN")}`,
-        topModel ? `主力：${topModel.modelName} (${this.formatTooltipTokens(topModel.totalTokens)})` : "",
-        topToolName ? `常用工具：${topToolName}` : "",
-        "",
-        "点击打开面板",
-      ],
+      onlineLines,
       getDominantPercentage(this.currentSummary) >= 80 ? "warning" : "info",
     );
   }
@@ -321,6 +332,18 @@ export class StatusBarManager {
     this.statusBarItem.text = this.getText();
     this.statusBarItem.tooltip = this.getTooltip();
     this.statusBarItem.color = this.getColor();
+  }
+
+  /**
+   * Build the weekly token tooltip line, or null when no weekly limit exists.
+   */
+  private formatWeeklyTooltipLine(): string | null {
+    const item = getWeeklyTokenItem(this.currentSummary);
+    if (!item) return null;
+    const resetTime = item.resetAt
+      ? new Date(item.resetAt).toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false })
+      : "--";
+    return `每周 **${item.percentage.toFixed(1)}%** · 重置 ${resetTime}`;
   }
 
   private formatTooltipTokens(v: number): string {
