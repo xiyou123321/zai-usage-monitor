@@ -22,7 +22,7 @@
 ### 配额监控
 - **Token 配额进度条**：可视化展示 Token 配额使用百分比，进度条颜色随用量渐变（绿→黄→橙→红）
 - **MCP 配额进度条**：实时显示 MCP 工具调用配额，含已用/总量和重置时间
-- **状态栏集成**：显示在状态栏左侧，精简格式 `T{token}% · M{mcp}%`，颜色权重以 Token 为主，悬停查看详细 Tooltip
+- **状态栏集成**：显示在状态栏左侧，精简格式 `T{token}% · W{weekly}% · M{mcp}%`（5 小时 Token / 每周 Token / 每月 MCP），颜色权重以 Token 为主，悬停查看详细 Tooltip
 
 ### 数据统计
 - **快速统计卡片**：一排展示 4 个核心指标 —— Token 消耗总量（含趋势箭头对比上期）、模型调用次数（含平均每次 token 数）、工具调用次数（含调用占比）、主力模型
@@ -134,7 +134,7 @@
 
 ## 状态栏
 
-状态栏位于 VS Code 左侧，显示当前用量百分比，格式为 `T{token}% · M{mcp}%`。颜色以 Token 用量为主：
+状态栏位于 VS Code 左侧，显示当前用量百分比，格式为 `T{token}% · W{weekly}% · M{mcp}%`（依次为 5 小时 Token、每周 Token、每月 MCP；账户无每周配额时自动省略 W 段）。颜色综合考虑三项配额，任一接近上限都会预警：
 
 - 默认色：< 50%
 - 黄色：50% - 80%
@@ -142,7 +142,7 @@
 - 错误色：≥ 95%
 
 悬停状态栏可查看详细 Tooltip，包含：
-- Token / MCP 配额百分比和重置时间
+- Token / 每周 / MCP 配额百分比和重置时间
 - 当前查询范围
 - Token 消耗总量、调用次数、平均每次消耗
 - 模型数量、工具调用次数
@@ -170,7 +170,7 @@
 | `glmUsage.baseUrl` | string | `https://api.z.ai/api/anthropic` | ZAI API 基础 URL |
 | `glmUsage.refreshInterval` | number | `600000` | 自动刷新间隔（毫秒，默认 10 分钟） |
 | `glmUsage.autoRefresh` | boolean | `true` | 启用/禁用自动刷新 |
-| `glmUsage.statusBarMode` | string | `detailed` | 状态栏模式：minimal（仅百分比）/ compact（Token+MCP百分比）/ detailed（Token和MCP） |
+| `glmUsage.statusBarMode` | string | `detailed` | 状态栏模式：minimal（仅百分比）/ compact（Token+每周+MCP百分比）/ detailed（Token、每周和MCP） |
 | `glmUsage.cacheEnabled` | boolean | `true` | 启用/禁用数据缓存 |
 | `glmUsage.cacheTTL` | number | `300` | 缓存有效期（秒，默认 5 分钟） |
 | `glmUsage.notificationThresholds` | number[] | `[50, 80, 95]` | 用量阈值提醒百分比 |

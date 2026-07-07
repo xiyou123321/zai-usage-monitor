@@ -1,5 +1,21 @@
 # 更新日志
 
+## [0.1.1] - 2026-07-07
+
+### 新增
+- **状态栏显示每周用量**：状态栏在原有「5 小时 Token (T%)」和「每月 MCP (M%)」之外，新增「每周 Token (W%)」，格式为 `T{tp}% · W{wp}% · M{mp}%`（detailed 模式）
+- **Tooltip 每周行**：悬停状态栏新增「每周 X% · 重置 …」行，展示每周 Token 配额百分比与重置时间
+
+### 改进
+- **颜色预警纳入每周**：状态栏颜色（黄/橙/红）现综合考虑 5 小时、每周、每月三项配额，任一接近上限都会触发预警
+- **优雅降级**：账户未返回每周配额（无第二个 TOKENS_LIMIT）时，状态栏与 Tooltip 自动退回原 `T% · M%` 表现
+- **配置文案**：`statusBarMode` 的 detailed 模式说明更新为「Token、每周和 MCP」
+
+### 技术改进
+- 新增 `src/util/quota.ts`：纯函数 `getWeeklyTokenItem` / `getDominantPercentage`，按 label 稳健定位「每周」配额项
+- 新增 `src/test/suite/quota.test.ts`：覆盖 weekly 存在/缺失/主导百分比等场景
+
+
 ## [0.1.0] - 2026-05-29
 
 ### 新增
