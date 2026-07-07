@@ -114,7 +114,7 @@
             "detailed"
           ],
           "default": "detailed",
-          "description": "状态栏显示模式: minimal(仅百分比), compact(Token百分比), detailed(Token和MCP)"
+          "description": "状态栏显示模式: minimal(仅百分比), compact(Token百分比), detailed(Token、每周和MCP)"
         }
       }
     }
